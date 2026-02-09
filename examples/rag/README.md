@@ -62,6 +62,14 @@ Use `--top-k` to control the number of results (default: 3):
 uv run python rag.py query "space stations" --top-k 5
 ```
 
+Use `--min-score` to filter out low-relevance results:
+
+```
+uv run python rag.py query "When was Darwin born?" --min-score 0.8
+```
+
+The two flags combine: `--top-k 5 --min-score 0.75` returns up to 5 results, but only those scoring at or above 0.75.
+
 ## Clean the index
 
 ```

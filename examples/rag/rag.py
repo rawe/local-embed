@@ -189,6 +189,7 @@ def cmd_query(args):
 
     query_text = args.query
     top_k = args.top_k
+    min_score = args.min_score
 
     # Prepend E5 query prefix
     prefixed = [f"query: {query_text}"]
@@ -207,8 +208,10 @@ def cmd_query(args):
             "score": round(score, 4),
         })
 
-    # Sort by score descending, take top-k
+    # Sort by score descending, apply threshold, take top-k
     scored.sort(key=lambda x: x["score"], reverse=True)
+    if min_score is not None:
+        scored = [s for s in scored if s["score"] >= min_score]
     results = scored[:top_k]
 
     output = {
@@ -246,6 +249,10 @@ def main():
     p_query.add_argument("query", help="Search query text")
     p_query.add_argument(
         "--top-k", type=int, default=3, help="Number of results (default: 3)"
+    )
+    p_query.add_argument(
+        "--min-score", type=float, default=None,
+        help="Minimum similarity score threshold (e.g. 0.75)"
     )
 
     # clean
