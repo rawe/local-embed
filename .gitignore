@@ -43,3 +43,7 @@ models/
 .env
 .env.local
 tasks/
+
+# Claude Code - exclude local settings and plans
+.claude/settings.local.json
+.claude/plans/
