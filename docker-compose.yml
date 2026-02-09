@@ -1,0 +1,14 @@
+services:
+  embedding-service:
+    build:
+      context: .
+      # To bake a different model into the image, override the build arg:
+      # args:
+      #   DEFAULT_MODEL_ID: intfloat/multilingual-e5-large
+    ports:
+      - "8000:8000"
+    environment:
+      # Model selection — must match the model baked into the image (see build arg above)
+      - EMBED_MODEL_ID=intfloat/multilingual-e5-base
+      - EMBED_DEVICE=cpu
+      - HF_HOME=/models/hf
