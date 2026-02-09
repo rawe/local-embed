@@ -37,9 +37,9 @@ def get_embedding(text):
 
 
 def main():
-    # Read the sample file
+    # Read the sample file from the shared test-data directory
     here = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.join(here, "sample.txt")
+    path = os.path.join(here, "..", "test-data", "space-exploration.txt")
 
     print(f"Reading {os.path.basename(path)}...")
     with open(path) as f:

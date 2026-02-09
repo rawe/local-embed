@@ -25,7 +25,7 @@ uv run python run.py
 ## Expected output
 
 ```
-Reading sample.txt...
+Reading space-exploration.txt...
 Split into 4 chunks (max 1000 chars each)
 
 Chunk 1 (952 chars):
