@@ -10,63 +10,34 @@ The deliberate decision to avoid a vector database keeps the focus on the fundam
 
 The end goal is to provide a practical skill that AI coding assistants like Claude Code can use for semantic search over local files.
 
-## Examples
+## Prerequisites
 
-- **[Local embedding test](examples/local-test/)** — Chunks a text file and sends each chunk to the embedding service. A minimal end-to-end sanity check.
-- **[RAG CLI](examples/rag/)** — Indexes text files and queries them via semantic search. Uses only Python stdlib. Designed as a skill for AI coding assistants.
+**Local usage:**
 
-## Setup
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/) — fast Python package manager
 
-Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
+**Docker (alternative):**
+
+- [Docker](https://www.docker.com/) (Docker Compose is optional)
+
+## Quick Start
 
 ```bash
 # Clone and enter the project
-cd embedding-service
+git clone git@github.com:rawe/local-embed.git
+cd local-embed
 
-# Create virtualenv and install dependencies
+# Install dependencies
 uv sync --group dev
 
-# Run the API server
+# Start the API server
 uv run uvicorn embed_provider.api:app --host 0.0.0.0 --port 8000
-
-# Run the test suite
-uv run pytest -v
 ```
 
-## Configuration
+The model is downloaded from Hugging Face on first start. Subsequent starts use the cached model.
 
-All settings are controlled via environment variables:
-
-| Variable | Default | Description |
-|---|---|---|
-| `EMBED_MODEL_ID` | `intfloat/multilingual-e5-base` | HuggingFace model identifier |
-| `EMBED_DEVICE` | `auto` | Compute device (`auto`, `cpu`, `cuda`, `mps`) |
-| `EMBED_NORMALIZE` | `true` | Normalize embeddings to unit length |
-| `EMBED_BATCH_SIZE` | `32` | Encoding batch size |
-| `EMBED_E5_MODE` | `passage` | E5 prefix mode (`passage`, `query`, `none`) |
-| `HF_HOME` | *(system default)* | HuggingFace cache directory for downloaded models |
-
-### Device selection
-
-When `EMBED_DEVICE=auto` (the default), the service picks the best available device:
-
-1. **MPS** (Apple Silicon GPU) -- preferred on macOS
-2. **CUDA** (NVIDIA GPU) -- preferred on Linux with GPU
-3. **CPU** -- fallback
-
-Set `EMBED_DEVICE=cpu` to force CPU inference, or `EMBED_DEVICE=cuda` / `EMBED_DEVICE=mps` to pin a specific accelerator.
-
-### Model caching
-
-Sentence-transformers downloads the model on first use. By default models are cached in `~/.cache/huggingface/`. Set `HF_HOME` to change the cache location:
-
-```bash
-export HF_HOME=/path/to/models
-```
-
-## API Usage
-
-### Health check
+Verify the service is running:
 
 ```bash
 curl http://localhost:8000/health
@@ -75,6 +46,8 @@ curl http://localhost:8000/health
 ```json
 {"status": "ok", "model": "intfloat/multilingual-e5-base", "device": "mps"}
 ```
+
+## API Usage
 
 ### Generate embeddings
 
@@ -108,6 +81,50 @@ Response:
 }
 ```
 
+## Configuration
+
+All settings are controlled via environment variables:
+
+| Variable | Default | Description |
+|---|---|---|
+| `EMBED_MODEL_ID` | `intfloat/multilingual-e5-base` | HuggingFace model identifier |
+| `EMBED_DEVICE` | `auto` | Compute device (`auto`, `cpu`, `cuda`, `mps`) |
+| `EMBED_NORMALIZE` | `true` | Normalize embeddings to unit length |
+| `EMBED_BATCH_SIZE` | `32` | Encoding batch size |
+| `EMBED_E5_MODE` | `passage` | E5 prefix mode (`passage`, `query`, `none`) |
+| `HF_HOME` | *(system default)* | HuggingFace cache directory for downloaded models |
+
+### Device selection
+
+When `EMBED_DEVICE=auto` (the default), the service picks the best available device:
+
+1. **MPS** (Apple Silicon GPU) — preferred on macOS
+2. **CUDA** (NVIDIA GPU) — preferred on Linux with GPU
+3. **CPU** — fallback
+
+Set `EMBED_DEVICE=cpu` to force CPU inference, or `EMBED_DEVICE=cuda` / `EMBED_DEVICE=mps` to pin a specific accelerator.
+
+### Model selection
+
+The default model is `intfloat/multilingual-e5-base` (768-dimensional embeddings). Override it with:
+
+```bash
+EMBED_MODEL_ID=intfloat/multilingual-e5-large uv run uvicorn embed_provider.api:app
+```
+
+### Model caching
+
+Sentence-transformers downloads the model on first use. By default models are cached in `~/.cache/huggingface/`. Set `HF_HOME` to change the cache location:
+
+```bash
+export HF_HOME=/path/to/models
+```
+
+## Examples
+
+- **[Local embedding test](examples/local-test/)** — Chunks a text file and sends each chunk to the embedding service. A minimal end-to-end sanity check.
+- **[RAG CLI](examples/rag/)** — Indexes text files and queries them via semantic search. Uses only Python stdlib. Designed as a skill for AI coding assistants.
+
 ## Testing
 
 ```bash
@@ -118,17 +135,24 @@ uv run pytest -v
 SKIP_MODEL_TESTS=1 uv run pytest -v
 ```
 
-## Model Selection
+## Docker
 
-The default model is `intfloat/multilingual-e5-base` (768-dimensional embeddings).
-
-**Local development** — set the `EMBED_MODEL_ID` environment variable:
+Build and run with Docker Compose:
 
 ```bash
-EMBED_MODEL_ID=intfloat/multilingual-e5-large uv run uvicorn embed_provider.api:app
+docker compose up --build
 ```
 
-**Docker** — the model is pre-downloaded at build time. To change it, override the build arg *and* the runtime env var so they match:
+Or build and run manually:
+
+```bash
+docker build -t embedding-service .
+docker run -p 8000:8000 embedding-service
+```
+
+The Docker image pre-downloads the model at build time, so the container starts without network access to Hugging Face.
+
+To use a different model with Docker, override the build arg **and** the runtime env var so they match:
 
 ```bash
 # Build with a different model baked in
@@ -139,16 +163,3 @@ docker run -e EMBED_MODEL_ID=intfloat/multilingual-e5-large -p 8000:8000 embeddi
 ```
 
 In `docker-compose.yml` both are configured in one place — see the commented `args` block and the `EMBED_MODEL_ID` env var.
-
-## Docker
-
-```bash
-# Build and run with docker-compose
-docker compose up --build
-
-# Or build manually
-docker build -t embedding-service .
-docker run -p 8000:8000 embedding-service
-```
-
-The Docker image pre-downloads the model at build time, so the container starts without network access to HuggingFace.
