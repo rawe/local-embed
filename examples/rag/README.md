@@ -24,6 +24,16 @@ You can index multiple files. Each call appends to the existing index:
 uv run python rag.py index ../test-data/artificial-intelligence.txt
 ```
 
+## Index multiple files
+
+Use glob patterns to index all files matching a pattern in one command:
+
+```
+uv run python rag.py index "../test-data/*.txt"
+```
+
+Quote the pattern so the shell does not expand it before Python sees it.
+
 ## Query the index
 
 ```

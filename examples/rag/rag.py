@@ -4,11 +4,13 @@ Uses only Python stdlib + the embedding service at localhost:8000.
 
 Usage:
     python rag.py index <file>            # Index a text file
+    python rag.py index "*.txt"           # Index all matching files (glob)
     python rag.py query "search text"     # Search indexed chunks
     python rag.py clean                   # Delete the index
 """
 
 import argparse
+import glob
 import json
 import math
 import os
@@ -104,13 +106,8 @@ def save_index(index):
 # Subcommands
 # ---------------------------------------------------------------------------
 
-def cmd_index(args):
-    """Index a text file: chunk, embed, and store."""
-    path = os.path.abspath(args.file)
-    if not os.path.isfile(path):
-        print(f"Error: file not found: {path}", file=sys.stderr)
-        sys.exit(1)
-
+def _index_single_file(path, index):
+    """Index one text file into the given index. Returns number of chunks added."""
     source = os.path.basename(path)
     print(f"Reading {source}...", file=sys.stderr)
     with open(path) as f:
@@ -135,17 +132,52 @@ def cmd_index(args):
             "embedding": vec,
         })
 
-    # Append to existing index
-    index = load_index()
     index["documents"].extend(new_docs)
-    save_index(index)
+    return len(new_docs)
 
-    total = len(index["documents"])
-    print(
-        f"Indexed {len(new_docs)} chunks from {source} "
-        f"({total} total chunks in index)",
-        file=sys.stderr,
-    )
+
+def cmd_index(args):
+    """Index a text file (or glob pattern): chunk, embed, and store."""
+    pattern = args.file
+
+    # Detect glob pattern
+    if "*" in pattern or "?" in pattern:
+        files = sorted(glob.glob(pattern))
+        if not files:
+            print(f"Error: no files matched pattern: {pattern}", file=sys.stderr)
+            sys.exit(1)
+        print(f"Matched {len(files)} file(s):", file=sys.stderr)
+        for f in files:
+            print(f"  {f}", file=sys.stderr)
+        index = load_index()
+        total_added = 0
+        for filepath in files:
+            path = os.path.abspath(filepath)
+            if not os.path.isfile(path):
+                print(f"Warning: skipping non-file: {path}", file=sys.stderr)
+                continue
+            total_added += _index_single_file(path, index)
+        save_index(index)
+        total = len(index["documents"])
+        print(
+            f"Indexed {total_added} chunks from {len(files)} file(s) "
+            f"({total} total chunks in index)",
+            file=sys.stderr,
+        )
+    else:
+        path = os.path.abspath(pattern)
+        if not os.path.isfile(path):
+            print(f"Error: file not found: {path}", file=sys.stderr)
+            sys.exit(1)
+        index = load_index()
+        added = _index_single_file(path, index)
+        save_index(index)
+        total = len(index["documents"])
+        print(
+            f"Indexed {added} chunks from {os.path.basename(path)} "
+            f"({total} total chunks in index)",
+            file=sys.stderr,
+        )
 
 
 def cmd_query(args):
@@ -206,8 +238,8 @@ def main():
     sub = parser.add_subparsers(dest="command")
 
     # index
-    p_index = sub.add_parser("index", help="Index a text file")
-    p_index.add_argument("file", help="Path to the text file to index")
+    p_index = sub.add_parser("index", help="Index a text file or glob pattern")
+    p_index.add_argument("file", help="Path to a text file or glob pattern (e.g. '*.txt')")
 
     # query
     p_query = sub.add_parser("query", help="Search indexed chunks")
