@@ -2,6 +2,19 @@
 
 Multilingual embedding API powered by [sentence-transformers](https://www.sbert.net/) and FastAPI. Exposes an OpenAI-compatible `/v1/embeddings` endpoint using the `intfloat/multilingual-e5-base` model (768-dimensional embeddings).
 
+## Motivation
+
+This project provides a simple, fully local embedding service with no external dependencies beyond loading the model from Hugging Face. The included RAG example is a low-level prototype built entirely on Python's standard library — it is **not production-ready** and should not be used as such.
+
+The deliberate decision to avoid a vector database keeps the focus on the fundamentals: chunking, embedding, and cosine similarity search. No abstractions, no frameworks — just the core mechanics, easy to read and understand.
+
+The end goal is to provide a practical skill that AI coding assistants like Claude Code can use for semantic search over local files.
+
+## Examples
+
+- **[Local embedding test](examples/local-test/)** — Chunks a text file and sends each chunk to the embedding service. A minimal end-to-end sanity check.
+- **[RAG CLI](examples/rag/)** — Indexes text files and queries them via semantic search. Uses only Python stdlib. Designed as a skill for AI coding assistants.
+
 ## Setup
 
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).

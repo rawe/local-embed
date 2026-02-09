@@ -52,6 +52,7 @@ uv run python examples/rag/rag.py query "<natural language question>" --top-k <N
 
 - `--top-k` (default 3): max number of results.
 - `--min-score` (optional): minimum similarity score (e.g. 0.75). Results below this are excluded.
+  **Always use `--min-score` when querying.** Default to `0.75` for quality results. Use `0.8+` when the user wants a high bar. Only go below `0.6` if you need broad, exploratory recall.
 
 Output is JSON to stdout with `query` and `results` (each has `source`, `chunk_index`, `text`, `score`).
 
